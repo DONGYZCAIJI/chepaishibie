@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
-//using System.Drawing.Imaging;
+using System.Drawing.Imaging;
 
 namespace chepaishibie
 {
     public class BaseFunction
     {
+
     }
 }

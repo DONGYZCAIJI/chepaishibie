@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -393,17 +392,28 @@ namespace chepaishibie
 		//确实调包了，不掉包也用不来啊
 		private void toolStripMenuItem10_Click_1(object sender, EventArgs e)
 		{
-			Bitmap bitmap = new Bitmap(pictureBox2.Image);
-			Mat mat = BitmapConverter.ToMat(bitmap);
-			Mat temp1 = new Mat();
-			Mat temp2 = new Mat();
-			Cv2.CvtColor(mat, temp1, ColorConversionCodes.RGBA2RGB);
-			Cv2.CvtColor(temp1, temp2, ColorConversionCodes.RGB2GRAY);
-			Cv2.Threshold(temp2, temp2, 0, 255, ThresholdTypes.Otsu);
-			Bitmap bitmap1 =BitmapConverter.ToBitmap(temp2);
-			pictureBox2.Image = bitmap1;
-		}
+			if (pictureBox2.Image != null)
+			{
+				try
+				{
+					Bitmap bitmap = new Bitmap(pictureBox2.Image);
+					Mat mat = BitmapConverter.ToMat(bitmap);
+					Mat temp1 = new Mat();
+					Mat temp2 = new Mat();
+					Cv2.CvtColor(mat, temp1, ColorConversionCodes.RGBA2RGB);
+					Cv2.CvtColor(temp1, temp2, ColorConversionCodes.RGB2GRAY);
+					Cv2.Threshold(temp2, temp2, 0, 255, ThresholdTypes.Otsu);
+					Bitmap bitmap1 = BitmapConverter.ToBitmap(temp2);
+					pictureBox2.Image = bitmap1;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message + '!');
+				}
+			}
+			else MessageBox.Show("能不能看清楚再点");
 
+		}
 		private void toolStripMenuItem11_Click(object sender, EventArgs e)
         {
 			try
@@ -482,6 +492,109 @@ namespace chepaishibie
 			catch (Exception ex)
 			{
 				MessageBox.Show(ex.Message, "信息提示");
+			}
+		}
+		//图像压缩
+        private void toolStripMenuItem12_Click(object sender, EventArgs e)
+        {
+			try
+            {
+				bm = new Bitmap(pictureBox1.Image);
+				bm = ZoomImage(bm, pictureBox1.Height, pictureBox1.Width);  //缩放输入图像大小           
+				pictureBox1.Image = bm;
+				MessageBox.Show("图像压缩成功");
+            }
+			catch(Exception)
+            {
+				MessageBox.Show("可能你的图片并未导入");
+            }
+
+		}
+		//zoomimage函数，是用来压缩图像的
+		private Bitmap ZoomImage(Bitmap bitmap, int destHeight, int destWidth)
+		{
+			try
+			{
+				System.Drawing.Image sourImage = bitmap;
+				int width = 0, height = 0;
+				//按比例缩放
+				int sourWidth = sourImage.Width;
+				int sourHeight = sourImage.Height;
+				if (sourHeight > destHeight || sourWidth > destWidth)
+				{
+					if ((sourWidth * destHeight) > (sourHeight * destWidth))
+					{
+						width = destWidth;
+						height = (destWidth * sourHeight) / sourWidth;
+					}
+					else
+					{
+						height = destHeight;
+						width = (sourWidth * destHeight) / sourHeight;
+					}
+				}
+				else
+				{
+					width = sourWidth;
+					height = sourHeight;
+				}
+				Bitmap destBitmap = new Bitmap(destWidth, destHeight);
+				Graphics g = Graphics.FromImage(destBitmap);
+				g.Clear(Color.Transparent);
+				//设置画布的描绘质量
+				g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+				g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+				g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+				g.DrawImage(sourImage, new Rectangle((destWidth - width) / 2, (destHeight - height) / 2, width, height), 0, 0, sourImage.Width, sourImage.Height, GraphicsUnit.Pixel);
+				g.Dispose();
+				//设置压缩质量
+				System.Drawing.Imaging.EncoderParameters encoderParams = new System.Drawing.Imaging.EncoderParameters();
+				long[] quality = new long[1];
+				quality[0] = 8;
+				System.Drawing.Imaging.EncoderParameter encoderParam = new System.Drawing.Imaging.EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality);
+				sourImage.Dispose();
+				return destBitmap;
+			}
+			catch
+			{
+				return bitmap;
+			}
+
+		}
+		//图像裁剪，把图像裁剪一部分来突出车牌
+		private Image CropImage(Image originImage, Rectangle region)
+		{
+			Bitmap result = new Bitmap(region.Width, region.Height);
+			Graphics graphics = Graphics.FromImage(result);
+			graphics.DrawImage(originImage, new Rectangle(0, 0, region.Width, region.Height), region, GraphicsUnit.Pixel);
+			return result;
+		}
+		private void toolStripMenuItem13_Click(object sender, EventArgs e)
+        {
+			//创建矩形区域
+			int qix, qiy, mox, moy = 0;
+			bm = new Bitmap(pictureBox1.Image);
+			if (bm.Height > bm.Width)
+			{
+				qix = bm.Width * 3 / 16;
+				qiy = bm.Height * 4 / 9;
+				mox = bm.Width * 2 / 3;
+				moy = bm.Height * 2 / 3;
+				Rectangle cropRegion = new Rectangle(qix, qiy, mox, moy);
+				pictureBox1.Image = CropImage(pictureBox1.Image, cropRegion);
+				pictureBox1.Dock = DockStyle.Fill;
+				pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+			}
+			else
+			{
+				qix = bm.Width * 2 / 5;
+				qiy = bm.Height * 3 / 12;
+				mox = bm.Width * 15 / 30;
+				moy = bm.Height * 9 / 12;
+				Rectangle cropRegion = new Rectangle(qix, qiy, mox, moy);
+				pictureBox1.Image = CropImage(pictureBox1.Image, cropRegion);
+				pictureBox1.Dock = DockStyle.Fill;
+				pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
 			}
 		}
     }
